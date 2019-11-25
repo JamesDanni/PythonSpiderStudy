@@ -1,0 +1,5 @@
+title = "程序配置文件"
+
+[basic]
+    mycookie = "admin_language=zh-cn; PHPSESSID=kckb49op58mn36h6bqrb9mthd1; hisi_iframe=0; hisi_admin_theme=7"
+    timesleep = 10   #每个店铺之间的修改间隔,单位秒
