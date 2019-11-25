@@ -109,6 +109,7 @@ def get_data_to_csv():
             logging.error("店铺列表为空，请注意核对.第%d页的数据"%(i+1))
             continue
         save_data(page_lst,i)
+        time.sleep(3)
 
 def modify_store_remain_total(d_id,d_store_remain_total):
     '''
@@ -198,8 +199,8 @@ def compare_data():
                 continue
             c = int(i[5]) - int(i[3])
         except:
-            print("csv的第%d行预设值为空?，默认应该是0"%(k+1))
-            logging.error("csv的第%d行预设值为空?，默认应该是0,获取到的数据为:%s"%(k+1,i))
+            print("csv的第%d行预设值为空?，不允许为空"%(k+1))
+            logging.error("csv的第%d行预设值为空?"%(k+1))
             continue
         if c > 1000:
             if int(i[4]) == 0:
@@ -214,7 +215,7 @@ def main():
     get_data_to_csv()
     a = True
     while a:
-        Y = input("请前往修改预设值，修改完成后，请输入大写的Y或者小写的y")
+        Y = input("请前往修改预设值，修改完成后，请输入大写的Y或者小写的y\n")
         if Y == "Y" or Y == "y":
             compare_data()
             a = False
