@@ -6,13 +6,7 @@ import toml
 import csv
 import time
 import logging
-
-logging.basicConfig(level = "ERROR",
-                    datefmt = "%Y-%m-%d %H:%M:%S",
-                    format = '%(asctime)s %(filename)s[line:%(lineno)d] %(message)s',
-                    filename = "log.txt",
-                    filemode = 'w'
-                    )
+import os
 
 def get_page_data(idx):
     '''
@@ -35,6 +29,7 @@ def get_page_data(idx):
     try:
         ret = requests.get(url, headers=headers, stream=True)
         ret.raise_for_status()
+        logging.error("获取店铺列表：%s"%ret.text)
         return ret.text
     except:
         print("获取店铺列表失败！")
@@ -62,7 +57,7 @@ def deal_page_data(json_str_data):
             d_name = i["name"]                               #店铺名字
             d_store_remain_total = i["store_remain_total"]   #2--每日限额
             d_status = i["status"]                           #3--状态（0:禁用  1:启用）
-            d_set = i["nick"]                                #1--成单金额（暂定是nick字段）TODO
+            d_set = i["cur_total"]                           #1--成单金额（暂定是nick字段）
             lst.append([d_id,d_name,d_store_remain_total,d_set,d_status])
     except:
         print("获取店铺元素失败！")
@@ -77,15 +72,29 @@ def save_data(data,idx):
     :param idx: 循环次数
     :return:
     '''
-    file_path = time.strftime("%Y-%m-%d")
-    file_name = file_path + ".csv"
-    with open(file_name,"a",newline="",encoding="utf-8") as f:
-        f_csv = csv.writer(f)
-        if idx == 0:
-            f_csv.writerow(["店铺ID","店铺名字","每日限额(2)","成单金额(1)","状态","预设值"])
-        for i in data:
-            f_csv.writerow(i)
-    f.close()
+    if Gidx == 1:  #程序如果第一次运行，则将数据保存到-->预设值.csv
+        file_name = Day_Path + "/预设值.csv"
+        with open(file_name,"a",newline="",encoding="utf-8") as f:
+            f_csv = csv.writer(f)
+            if idx == 0:
+                f_csv.writerow(["店铺ID","店铺名字","每日限额(2)","成单金额(1)","状态","预设值"])
+            for i in data:
+                f_csv.writerow(i)
+        f.close()
+    tmp_file_name = Day_Path + "/时时数据.csv"  #每次运行都更新-->时时数据.csv
+    if idx == 0:                               #如果是第一页数据就以覆盖的方式去写文件
+        tmp_file = open(tmp_file_name, "w", newline="", encoding="utf-8")
+        tmp_csv = csv.writer(tmp_file)
+        tmp_csv.writerow(["店铺ID", "店铺名字", "每日限额(2)", "成单金额(1)", "状态"])
+        logging.error("店铺列表列名写入时时数据文件成功")
+    else:                                      #除了第一页，后续页面都以追加方式写文件
+        tmp_file = open(tmp_file_name, "a", newline="", encoding="utf-8")
+        tmp_csv = csv.writer(tmp_file)
+    for i in data:
+        tmp_csv.writerow(i)
+    logging.error("店铺列表数据写入时时数据文件成功")
+    tmp_file.close()
+    return
 
 def get_data_to_csv():
     '''
@@ -95,8 +104,8 @@ def get_data_to_csv():
     try:
         page_count = json.loads(get_page_data(1))["count"]
     except:
-        print("获取店铺列表失败")
-        logging.error("获取店铺列表失败")
+        print("获取店铺列表失败，可能cookie已经过期，请注意核对")
+        logging.error("获取店铺列表失败，可能cookie已经过期，请注意核对")
     if page_count % 10 == 0:
         page_count = int(page_count / 10)
     else:
@@ -109,7 +118,6 @@ def get_data_to_csv():
             logging.error("店铺列表为空，请注意核对.第%d页的数据"%(i+1))
             continue
         save_data(page_lst,i)
-        time.sleep(3)
 
 def modify_store_remain_total(d_id,d_store_remain_total):
     '''
@@ -187,44 +195,82 @@ def compare_data():
     比较本地数据，判断是否需要修改店铺数据
     :return:
     '''
-    file_path = time.strftime("%Y-%m-%d")
-    file_name = file_path + ".csv"
+    file_name = Day_Path + "/预设值.csv"
+    tmp_file_path = Day_Path + "/时时数据.csv"
+    tmp_csv = csv.reader(open(tmp_file_path,"r",encoding="utf-8"))
     r_csv = csv.reader(open(file_name, "r",encoding="unicode_escape"))
+    t_lst = []
+    for _t_lst in tmp_csv:
+        t_lst.append(_t_lst)
     # ["店铺ID","店铺名字","每日限额(2)","成单金额(1)","状态","预设值"]
     for k,i in enumerate(r_csv):
+        logging.error("--------------%d" % k)
         if k == 0:
             continue
-        try:
-            if i[5] == "" or i[3] == "":
-                continue
-            c = int(i[5]) - int(i[3])
-        except:
-            print("csv的第%d行预设值为空?，不允许为空"%(k+1))
-            logging.error("csv的第%d行预设值为空?"%(k+1))
-            continue
-        if c > 1000:
-            if int(i[4]) == 0:
-                #print("增加2的值")
-                modify_store_remain_total(i[0],int(i[2]) + 1000)
-                time.sleep(3)
-                #print("修改状态为1")
-                modify_status(i[0])
-                time.sleep(time_sleep)
+        for tk,ti in enumerate(t_lst):
+            logging.error("k:%d tk:%d"%(k,tk))
+            if tk == k:
+                t2,t3,t4 = int(ti[2]),int(ti[3]),int(ti[4])
+                logging.error("预设值:%d 成单金额:%d 状态:%d"%(int(i[5]),t3,t4))
+                try:
+                    c = int(i[5]) - t3
+                except:
+                    print("数据比对失败~~~~")
+                    logging.error("my_set or now_value id null:%d %d"%(i[5],t3))
+                    continue
+                logging.error("my_set:%d now_value:%d status:%d"%(int(i[5]),t3,t4))
+                if c > 1000:
+                    if t4 == 0:
+                        # print("增加2的值")
+                        modify_store_remain_total(i[0],t2 + 1000)
+                        time.sleep(3)
+                        # print("修改状态为1")
+                        modify_status(i[0])
+                        time.sleep(time_sleep)
+                break
 
 def main():
+    logging.error("程序第%d次执行开始"%Gidx)
     get_data_to_csv()
     a = True
     while a:
-        Y = input("请前往修改预设值，修改完成后，请输入大写的Y或者小写的y\n")
-        if Y == "Y" or Y == "y":
+        if Gidx == 1:  #第一次执行则进行预设值的输入
+            Y = input("请前往 %s 文件夹修改文件【预设值.csv】，修改完成后，请输入大写的Y或者小写的y\n"%Day_Path)
+            if Y == "Y" or Y == "y":
+                logging.error("今日程序已执行%d次，进行本地数据比对中..." % Gidx)
+                compare_data()
+                a = False
+                logging.error("数据比对完毕")
+            else:
+                print("输入有误，请重新输入")
+        else:
+            logging.error("今日程序已执行%d次，进行本地数据比对中..." % Gidx)
             compare_data()
             a = False
-            print("请输入任意键退出程序")
-            input()
-        else:
-            print("输入有误，请重新输入")
+            logging.error("数据比对完毕")
+    print("今日程序第%d次执行完毕" % Gidx)
+    print("等待下一次循环...时间%d秒..."%(execsleep))
 
 config = toml.load("config.toml")
 my_cookie = config["basic"]["mycookie"]
 time_sleep = config["basic"]["timesleep"]
-main()
+execsleep = config["basic"]["execsleep"]
+Day_Path = time.strftime("%Y-%m-%d-%H-%M-%S")
+Gidx = 1  #定义全局变量，表示程序是第一次运行
+if not os.path.exists(Day_Path):  # 判断省份文件夹是否存在，不存在就创建一个
+    os.makedirs(Day_Path)
+
+logging.basicConfig(level = "ERROR",
+                    datefmt = "%Y-%m-%d %H:%M:%S",
+                    format = '%(asctime)s %(filename)s[line:%(lineno)d] %(message)s',
+                    filename = (Day_Path + "/log.txt"),
+                    filemode = 'w'
+                    )
+
+
+while 1:
+    main()
+    Gidx += 1
+    time.sleep(execsleep)
+
+#2019-11-26 17:36
