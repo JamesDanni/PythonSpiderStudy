@@ -4,6 +4,15 @@ from selenium import webdriver
 import selenium.webdriver.support.ui as ui
 import time
 from datetime import datetime
+import logging
+import random
+
+logging.basicConfig(level = "ERROR",
+                    datefmt = "%Y-%m-%d %H:%M:%S",
+                    format = '%(asctime)s %(filename)s[line:%(lineno)d] %(message)s',
+                    filename = "/log.txt",
+                    filemode = 'w'
+                    )
 
 #签到xpath
 sign_in = '//*[@id="form1"]/div[3]/table[1]/tbody/tr[2]/td[1]/img'
@@ -23,23 +32,33 @@ def open_chorm(want_xpath):
     dv.maximize_window()
     wait = ui.WebDriverWait(dv, 10)
     dv.get("http://oa.founder.com/group/Comperhensive/Default.aspx")
+    logging.error("程序等待中...等待网址打开...")
     time.sleep(5)
-    tc = dv.switch_to.alert()
-    tc.accept()
+    try:
+        tc = dv.switch_to.alert()
+        tc.accept()
+        logging.error("系统弹窗点击成功")
+    except:
+        logging.error("系统弹窗定位失败")
+    print("程序等待中...预计需要120秒")
+    logging.error("准备签到/签退...等待中...")
     time.sleep(120)  # 公司连北京服务器，会比较慢，这里直接等2min
     try:
         dv.find_element_by_xpath(want_xpath).click()
     except:
+        logging.error("签到/签退按钮定位失败,元素值：%s"%(want_xpath))
         dv.close()
-        return False
+        return True
     dv.close()
-    return True
+    return False
 
 def main():
-    # open_chorm()
+    # open_chorm("")  #第一次调试使用
+    # input("输入任意键退出调试程序")
+
     want_xpaht = calc_time()
     if want_xpaht == "":
-        time.sleep(500)
+        time.sleep(random.randint(300,600))
         return
     else:
         should_again = True
@@ -47,7 +66,12 @@ def main():
             should_again = open_chorm(want_xpaht)
 
 while 1:
-    main()
+    today = datetime.now().weekday() + 1
+    if today < 6:
+        main()
+    else:
+        time.sleep(3600*24)
 
-today = datetime.now().weekday() + 1
+
+
 
