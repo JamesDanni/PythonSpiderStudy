@@ -221,9 +221,11 @@ def compare_data():
                 logging.error("my_set:%d now_value:%d status:%d"%(int(i[5]),t3,t4))
                 if c > 1000:
                     if t4 == 0:
-                        # print("增加2的值")
-                        modify_store_remain_total(i[0],t2 + 1000)
-                        time.sleep(3)
+                        if t2 > 0:
+                            # print("增加2的值")
+                            logging.error("需要把店铺：%s 的每日限额修：%d 改成 %d"%(i[0],t2,t2+1000))
+                            modify_store_remain_total(i[0],t2 + 1000)
+                            time.sleep(3)
                         # print("修改状态为1")
                         modify_status(i[0])
                         time.sleep(time_sleep)
@@ -256,6 +258,7 @@ my_cookie = config["basic"]["mycookie"]
 time_sleep = config["basic"]["timesleep"]
 execsleep = config["basic"]["execsleep"]
 Day_Path = time.strftime("%Y-%m-%d-%H-%M-%S")
+# Day_Path = "2019-11-26-17-05-32"
 Gidx = 1  #定义全局变量，表示程序是第一次运行
 if not os.path.exists(Day_Path):  # 判断省份文件夹是否存在，不存在就创建一个
     os.makedirs(Day_Path)
@@ -273,4 +276,4 @@ while 1:
     Gidx += 1
     time.sleep(execsleep)
 
-#2019-11-26 17:36
+#2019-11-27 17:28
