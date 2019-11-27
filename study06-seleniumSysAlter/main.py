@@ -21,9 +21,11 @@ sign_out = '//*[@id="form1"]/div[3]/table[1]/tbody/tr[2]/td[3]/img'
 
 def calc_time():
     time_now = time.strftime("%H:%M:%S", time.localtime())
-    if time_now > "17:45:00":  #TODO 签到的时间区域
+    if time_now > "08:15:00" and time_now < "08:30:00":
+        time.sleep(random.randint(60,480))
         return sign_in
-    if time_now < "17:49:50":  #TODO 签退的时间区域
+    if time_now > "17:30:00" and time_now < "18:00:00":
+        time.sleep(random.randint(60,480))
         return sign_out
     return ""
 
@@ -58,7 +60,7 @@ def main():
 
     want_xpaht = calc_time()
     if want_xpaht == "":
-        time.sleep(random.randint(300,600))
+        time.sleep(random.randint(30,60))
         return
     else:
         should_again = True
