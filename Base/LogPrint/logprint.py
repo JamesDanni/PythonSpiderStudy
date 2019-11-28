@@ -7,6 +7,13 @@ logging.basicConfig(                                                       #通�
     filemode="w",                                                          # w:覆盖方式  a:追加方式;
 )
 
+logging.basicConfig(level = "ERROR",
+                    datefmt = "%Y-%m-%d %H:%M:%S",
+                    format = '%(asctime)s %(filename)s[line:%(lineno)d] %(message)s',
+                    filename = ("log.txt"),
+                    filemode = 'w'
+                    )
+
 """
 format参数中可能用到的格式化串:
     1>.%(name)s
