@@ -16,8 +16,7 @@ def get_data(url):
         return None
 
 def paraise_data(data):
-    pattren = re.compile('<dd>.*?board-index-.*?>(.*?)</i>.*?name.*?a.*?>(.*?)</a>.*?releasetime\">' +
-                         '(.*?)</p>',re.S)
+    pattren = re.compile('<dd>.*?board-index-.*?>(.*?)</i>.*?name.*?a.*?>(.*?)</a>.*?releasetime\">(.*?)</p>',re.S)
     data = re.findall(pattren,data)
     return data
 
